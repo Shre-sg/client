@@ -9,10 +9,7 @@ const _layout = () => {
   return (
     <Stack>
       <Stack.Screen name="index" options={{ headerShown: false }} />
-      <Stack.Screen
-        name="ward-management"
-        options={{ title: "Ward Management" }}
-      />
+      <Stack.Screen name="index2" options={{ title: "Ward Management" }} />
     </Stack>
   );
 };

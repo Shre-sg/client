@@ -11,7 +11,7 @@ const Header = () => {
     <View style={styles.container}>
       <Text style={styles.title}>Air Quality Index Monitoring</Text>
       <Text style={styles.subtitle}>Dept. of Information Science and Engineering</Text>
-      <TouchableOpacity style={styles.button} onPress={() => router.push('/ward-management')}>
+      <TouchableOpacity style={styles.button} onPress={() => router.push('/index2')}>
         <Text style={styles.buttonText}>Ward Management</Text>
       </TouchableOpacity>
     </View>
