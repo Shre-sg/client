@@ -3,9 +3,8 @@ import React from "react";
 import { Stack } from "expo-router";
 import { enableScreens } from "react-native-screens";
 
-enableScreens();
-
 const _layout = () => {
+  enableScreens();
   return (
     <Stack>
       <Stack.Screen name="index" options={{ headerShown: false }} />

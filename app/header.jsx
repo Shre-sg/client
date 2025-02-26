@@ -1,5 +1,3 @@
-
-// header.jsx
 import { StyleSheet, Text, View, TouchableOpacity } from 'react-native';
 import React from 'react';
 import { useRouter } from 'expo-router';
@@ -46,14 +44,12 @@ const styles = StyleSheet.create({
     fontWeight: '400',
     color: '#FFF',
     textAlign: 'center',
+    marginBottom: 12, // Added space before the button
   },
   button: {
-    position: 'absolute',
-    right: 16,
-    top: 16,
     backgroundColor: '#FFF',
-    paddingVertical: 8,
-    paddingHorizontal: 12,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
     borderRadius: 8,
   },
   buttonText: {

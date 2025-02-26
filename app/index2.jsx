@@ -3,14 +3,24 @@ import { View, Text, TextInput, Button, FlatList, Alert, StyleSheet, Image, Touc
 import axios from 'axios';
 
 const FACILITY_OPTIONS = [
-  { type: 'Police Station', icon: 'path/to/icons/police.png' },
-  { type: 'Hospital', icon: 'path/to/icons/hospital.png' },
-  { type: 'Metro Station', icon: 'path/to/icons/metro.png' },
+  { type: 'Hospital', icon: require("../assets/hospital.png") },
+  { type: 'Fire Station', icon: require("../assets/metro.png") },
+  { type: 'Dam Station', icon: require("../assets/police.png") },
 ];
+
+const getIcon = (type) => {
+  const icons = {
+    "Hospital": require("../assets/hospital.png"),
+    "Fire Station": require("../assets/metro.png"),
+    "Dam Station": require("../assets/police.png"),
+  };
+  return icons[type];
+};
 
 const Index2 = () => {
   const [wards, setWards] = useState([]);
   const [name, setName] = useState('');
+  const [link, setLink] = useState('');
   const [facilities, setFacilities] = useState([]);
 
   const fetchWards = async () => {
@@ -24,21 +34,14 @@ const Index2 = () => {
   };
 
   const toggleFacility = (facilityType) => {
-    setFacilities((prevFacilities) => {
-      const exists = prevFacilities.find(f => f.type === facilityType);
-      if (exists) {
-        return prevFacilities.filter(f => f.type !== facilityType);
-      } else {
-        const iconPath = `path/to/icons/${facilityType.toLowerCase().replace(/\s/g, '_')}.png`;
-        return [...prevFacilities, { type: facilityType, name: '', icon: iconPath }];
-      }
+    setFacilities((prev) => {
+      const exists = prev.find(f => f.type === facilityType);
+      return exists ? prev.filter(f => f.type !== facilityType) : [...prev, { type: facilityType, name: '', link: '' }];
     });
   };
 
-  const updateFacilityName = (type, newName) => {
-    setFacilities((prevFacilities) =>
-      prevFacilities.map(f => f.type === type ? { ...f, name: newName } : f)
-    );
+  const updateFacilityField = (type, field, value) => {
+    setFacilities(prev => prev.map(f => f.type === type ? { ...f, [field]: value } : f));
   };
 
   const createWard = async () => {
@@ -46,31 +49,24 @@ const Index2 = () => {
       Alert.alert('Validation Error', 'Ward name and at least one facility are required');
       return;
     }
-
-    const payload = { name, facilities };
-    console.log('📤 Sending payload:', payload);
-
     try {
+      const payload = { name, link, facilities };
       const response = await axios.post('https://minor-project-backend-bom7.onrender.com/api/wards', payload);
       setWards([...wards, response.data]);
       setName('');
+      setLink('');
       setFacilities([]);
       Alert.alert('Success', 'Ward created successfully');
     } catch (error) {
       console.error('❌ Error creating ward:', error);
-      if (error.response) {
-        console.error('🚫 Server response:', error.response.data);
-        Alert.alert('Error', `Failed to create ward: ${error.response.data.message || 'Unknown error'}`);
-      } else {
-        Alert.alert('Error', 'Failed to create ward');
-      }
+      Alert.alert('Error', 'Failed to create ward');
     }
   };
 
   const deleteWard = async (id) => {
     try {
       await axios.delete(`https://minor-project-backend-bom7.onrender.com/api/wards/${id}`);
-      setWards(wards.filter((ward) => ward._id !== id));
+      setWards(wards.filter(ward => ward._id !== id));
       Alert.alert('Deleted', 'Ward deleted successfully');
     } catch (error) {
       console.error('❌ Error deleting ward:', error);
@@ -86,33 +82,32 @@ const Index2 = () => {
     <View style={styles.container}>
       <Text style={styles.title}>Wards Management</Text>
 
-      <TextInput
-        style={styles.input}
-        placeholder="Ward Name"
-        value={name}
-        onChangeText={setName}
-      />
+      <TextInput style={styles.input} placeholder="Ward Name" value={name} onChangeText={setName} />
+      <TextInput style={styles.input} placeholder="Ward Link (Optional)" value={link} onChangeText={setLink} />
 
       <Text style={styles.subtitle}>Select Facilities:</Text>
-      {FACILITY_OPTIONS.map((facility) => {
-        const selected = facilities.find(f => f.type === facility.type);
-        return (
-          <View key={facility.type} style={styles.facilityItem}>
-            <TouchableOpacity onPress={() => toggleFacility(facility.type)}>
-              <Image source={{ uri: facility.icon }} style={styles.icon} />
-            </TouchableOpacity>
-            <Text>{facility.type}</Text>
-            {selected && (
+      {FACILITY_OPTIONS.map((facility) => (
+        <View key={facility.type} style={styles.facilityItem}>
+          <TouchableOpacity onPress={() => toggleFacility(facility.type)}>
+            <Image source={facility.icon} style={styles.icon} />
+          </TouchableOpacity>
+          <Text>{facility.type}</Text>
+          {facilities.some(f => f.type === facility.type) && (
+            <>
               <TextInput
                 style={styles.input}
                 placeholder={`Enter ${facility.type} Name`}
-                value={selected.name}
-                onChangeText={(text) => updateFacilityName(facility.type, text)}
+                onChangeText={(text) => updateFacilityField(facility.type, 'name', text)}
               />
-            )}
-          </View>
-        );
-      })}
+              <TextInput
+                style={styles.input}
+                placeholder={`Enter ${facility.type} Link`}
+                onChangeText={(text) => updateFacilityField(facility.type, 'link', text)}
+              />
+            </>
+          )}
+        </View>
+      ))}
 
       <Button title="Create Ward" onPress={createWard} />
 
@@ -121,14 +116,28 @@ const Index2 = () => {
         keyExtractor={(item) => item._id}
         renderItem={({ item }) => (
           <View style={styles.wardItem}>
-            <Text style={styles.wardText}>{item.name}</Text>
-            {item.facilities.map((facility) => (
-              <View key={facility._id} style={styles.facilityDisplay}>
-                <Image source={{ uri: facility.icon }} style={styles.icon} />
-                <Text>{facility.name} ({facility.type})</Text>
-              </View>
-            ))}
-            <Button title="Delete" color="red" onPress={() => deleteWard(item._id)} />
+            <View>
+              <Text style={styles.wardName}>{item.name}</Text>
+              {item.link ? <Text style={styles.wardLink}>🔗 {item.link}</Text> : null}
+              
+              {item.facilities && item.facilities.length > 0 ? (
+                <View style={styles.facilitiesContainer}>
+                  <Text style={styles.facilitiesTitle}>Facilities:</Text>
+                  {item.facilities.map((facility, index) => (
+                    <View key={index} style={styles.facilityDetails}>
+                      <Image source={getIcon(facility.type)} style={styles.icon} />
+                      <View>
+                        <Text style={styles.facilityName}>{facility.type}: {facility.name}</Text>
+                        {facility.link ? (
+                          <Text style={styles.facilityLink}>🔗 {facility.link}</Text>
+                        ) : null}
+                      </View>
+                    </View>
+                  ))}
+                </View>
+              ) : null}
+            </View>
+            <Button title="Delete" onPress={() => deleteWard(item._id)} color="red" />
           </View>
         )}
       />
@@ -137,50 +146,20 @@ const Index2 = () => {
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    padding: 20,
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    marginBottom: 20,
-  },
-  subtitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginVertical: 10,
-  },
-  input: {
-    borderWidth: 1,
-    borderColor: '#ccc',
-    padding: 10,
-    marginBottom: 10,
-    borderRadius: 5,
-  },
-  facilityItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 10,
-  },
-  icon: {
-    width: 40,
-    height: 40,
-    marginRight: 10,
-  },
-  wardItem: {
-    padding: 15,
-    borderBottomWidth: 1,
-    borderBottomColor: '#ddd',
-  },
-  wardText: {
-    fontSize: 18,
-    fontWeight: 'bold',
-  },
-  facilityDisplay: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
+  container: { flex: 1, padding: 20 },
+  title: { fontSize: 24, fontWeight: 'bold', marginBottom: 10 },
+  input: { borderWidth: 1, borderColor: '#ccc', padding: 10, marginVertical: 5, borderRadius: 5 },
+  subtitle: { fontSize: 18, fontWeight: 'bold', marginTop: 10 },
+  facilityItem: { flexDirection: 'row', alignItems: 'center', marginVertical: 5 },
+  icon: { width: 30, height: 30, marginRight: 10 },
+  wardItem: { flexDirection: 'row', justifyContent: 'space-between', padding: 10, backgroundColor: '#f9f9f9', marginVertical: 5, borderRadius: 5 },
+  wardName: { fontSize: 18 },
+  facilitiesContainer: { marginTop: 5 },
+  facilitiesTitle: { fontWeight: 'bold', marginBottom: 3 },
+  facilityDetails: { flexDirection: 'row', alignItems: 'center', marginVertical: 3 },
+  facilityName: { fontSize: 16 },
+  facilityLink: { color: 'blue', textDecorationLine: 'underline' },
+  wardLink: { color: 'blue', marginBottom: 5 },
 });
 
 export default Index2;
